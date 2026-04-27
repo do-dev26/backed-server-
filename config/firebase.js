@@ -68,8 +68,8 @@ function initFirebase() {
   }
 
   // 🔥 SAFE PRIVATE KEY FIX
-  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '')
-    .replace(/\\n/g, '\n');
+const rawKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/^"|"$/g, '');
+const privateKey = rawKey.replace(/\\n/g, '\n');
 
   const serviceAccount = {
     type: 'service_account',
