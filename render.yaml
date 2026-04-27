@@ -1,0 +1,48 @@
+# render.yaml
+# Render.com deployment configuration
+# Place this in your backend repo root
+
+services:
+  - type: web
+    name: folioos-backend
+    env: node
+    region: singapore       # Closest to India
+    plan: free               # Change to "starter" for always-on ($7/mo)
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true         # Auto-deploy on git push
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+      # ── Fill these in Render Dashboard → Environment ──
+      - key: FRONTEND_URL
+        sync: false          # Set manually in Render dashboard
+
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+
+      - key: CASHFREE_APP_ID
+        sync: false
+
+      - key: CASHFREE_SECRET_KEY
+        sync: false
+
+      - key: CASHFREE_ENV
+        value: PROD          # Change to TEST for sandbox
+
+      - key: CASHFREE_WEBHOOK_SECRET
+        sync: false
+
+      - key: BASE_DOMAIN
+        value: folio.dev
