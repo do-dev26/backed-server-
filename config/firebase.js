@@ -37,67 +37,72 @@
 //  subdomains/{subdomain}
 //    └── uid (fast lookup index)
 // ═══════════════════════════════════════════════════════
-
 'use strict';
 
 const admin = require('firebase-admin');
 
-let _db   = null;
+let _db = null;
 let _auth = null;
 
 function initFirebase() {
-  // Prevent re-initialization
+  // Already initialized check
   if (admin.apps.length > 0) {
-    _db   = admin.firestore();
+    _db = admin.firestore();
     _auth = admin.auth();
     return { db: _db, auth: _auth };
   }
 
-  // Validate required env vars
-  const required = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
-  const missing  = required.filter(k => !process.env[k]);
+  // Env validation
+  const required = [
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_PRIVATE_KEY'
+  ];
+
+  const missing = required.filter(k => !process.env[k]);
+
   if (missing.length > 0) {
-    console.error('\n❌ Firebase Admin SDK: Missing environment variables:');
-    missing.forEach(k => console.error(`   - ${k}`));
-    console.error('\n   Copy .env.example to .env and fill in your Firebase credentials.\n');
+    console.error('❌ Missing Firebase env variables:');
+    missing.forEach(k => console.error(' - ' + k));
     process.exit(1);
   }
 
+  // 🔥 SAFE PRIVATE KEY FIX
+  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '')
+    .replace(/\\n/g, '\n');
+
   const serviceAccount = {
-    type:          'service_account',
-    project_id:    process.env.FIREBASE_PROJECT_ID,
-    client_email:  process.env.FIREBASE_CLIENT_EMAIL,
-    // .env stores \n as literal chars — convert back to real newlines
-    private_key:   process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    type: 'service_account',
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: privateKey,
   };
 
   admin.initializeApp({
-    credential:    admin.credential.cert(serviceAccount),
-    databaseURL:   process.env.FIREBASE_DATABASE_URL,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    credential: admin.credential.cert(serviceAccount),
   });
 
-  _db   = admin.firestore();
+  _db = admin.firestore();
   _auth = admin.auth();
 
-  // Disable deprecated timestamp behavior
-  _db.settings({ ignoreUndefinedProperties: true });
-
-  console.log(`✅ Firebase Admin initialized → Project: ${process.env.FIREBASE_PROJECT_ID}`);
-  return { db: _db, auth: _auth };
+  console.log('✅ Firebase initialized successfully');
 }
 
-// Collection references — call these after initFirebase()
-function getDB()   { return _db   || admin.firestore(); }
-function getAuth() { return _auth || admin.auth(); }
+// Helpers
+function getDB() {
+  return _db || admin.firestore();
+}
 
-// Shorthand collection getters
+function getAuth() {
+  return _auth || admin.auth();
+}
+
 const col = {
-  users:     () => getDB().collection('users'),
-  orders:    () => getDB().collection('orders'),
+  users: () => getDB().collection('users'),
+  orders: () => getDB().collection('orders'),
   analytics: () => getDB().collection('analytics'),
-  sites:     () => getDB().collection('generated_sites'),
-  subdoms:   () => getDB().collection('subdomains'),
+  sites: () => getDB().collection('generated_sites'),
+  subdomains: () => getDB().collection('subdomains'),
 };
 
 module.exports = { initFirebase, getDB, getAuth, col, admin };
